@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: homework_pod
+  name: homework-pod
   namespace: homework
 spec:
   containers:
