@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: homework_pod
+  namespace: homework
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 8000
+    volumeMounts:
+    - name: workdir # в поде (хосте). Имя монтируемого тома
+      mountPath: /homework # Директория внутри контейнера
+    lifecycle:
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "rm /homework/index.html"]
+  initContainers:
+  - name: install
+    image: busybox:1.28
+    command: # Команды, выполняемые внутри контейнера
+    - wget
+    - "-O"
+    - "/init/index.html" # полный путь для сохранения файла
+    - http://info.cern.ch
+    volumeMounts:
+    - name: workdir
+      mountPath: "/init" # сюда сохраняю файл, в точку монтирования.
+  dnsPolicy: Default
+  volumes:
+  - name: workdir
+    emptyDir: {} # Том, который живет внутри ПОДА, который доступен для всех контейнеров
+  
+
