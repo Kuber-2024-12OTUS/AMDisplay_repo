@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homework-deployment
+  namespace: homework
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80 # Внутри контейнера. Автоматом открывается на поде
+          name: nginx-port
+        volumeMounts:
+        - name: workdir # в поде (хосте). Имя монтируемого тома
+          mountPath: /usr/share/nginx/html # Директория внутри контейнера
+        volumeMounts:
+        - name: config-volume
+          mountPath: /homework/conf
+        livenessProbe:
+          httpGet:
+            port: 80
+            path: /index.html
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "rm /homework/index.html"]
+      # nodeSelector:
+      #   homework: "true"
+      initContainers:
+      - name: install
+        image: busybox:1.28
+        command: # Команды, выполняемые внутри контейнера
+        - wget
+        - "-O"
+        - "/init/index.html" # полный путь для сохранения файла
+        - http://info.cern.ch
+        volumeMounts:
+        - name: workdir
+          mountPath: "/init" # сюда сохраняю файл, в точку монтирования.
+      dnsPolicy: Default
+      volumes:
+      - name: workdir
+        persistentVolumeClaim:
+          claimName: homework-pvc  # Ссылка на PVC
+      - name: config-volume
+        configMap:
+          name: homework-cm
+        # emptyDir: {} # Том, который живет внутри ПОДА, который доступен для всех контейнеров
+  strategy:
+   type: RollingUpdate
+   rollingUpdate:
+     maxUnavailable: 1
+      
