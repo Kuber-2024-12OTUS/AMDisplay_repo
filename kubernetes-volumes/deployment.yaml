@@ -3,76 +3,74 @@ kind: Deployment
 metadata:
   name: homework-deployment
   namespace: homework
-  labels:
-    app: nginx
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: homework
   template:
     metadata:
       labels:
-        app: nginx
+        app: homework
     spec:
-      containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80 # Внутри контейнера. Автоматом открывается на поде
-          name: nginx-port
-        volumeMounts:
-        - name: config-volume
-          mountPath: /homework/conf
-        volumeMounts:
-        - name: nginx-custom-config # из этого тома возьми только custom.conf и смонтируй его в путь котроый ниже
-          mountPath: /etc/nginx/conf.d/
-        volumeMounts:
-        - name: workdir
-          mountPath: /usr/share/nginx/html # Директория внутри контейнера
-        livenessProbe:
-          httpGet:
-            port: 80
-            path: /index.html
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "rm /homework/index.html"]
-      initContainers:
-      - name: install
-        image: busybox:1.28
-        command: # Команды, выполняемые внутри контейнера
-        - wget
-        - "-O"
-        - "/init/index.html" # полный путь для сохранения файла
-        - http://info.cern.ch
-        volumeMounts:
-        - name: workdir
-          mountPath: "/init" # сюда сохраняю файл, в точку монтирования.
-      dnsPolicy: Default
       volumes:
-      - name: workdir
-        persistentVolumeClaim:
-          claimName: homework-pvc  # Ссылка на PVC
-      - name: custom-nginx-conf
-        configMap:
-          name: nginx-custom-config
-          items:
-          - key: custom.conf
-            path: custom.conf
-      - name: config-volume
-        configMap:
-          name: homework-cm
-          items:
-          - key: "game.properties"
-            path: "game.properties"
-          - key: "user-interface.properties"
-            path: "user-interface.properties"
-        # emptyDir: {} # Том, который живет внутри ПОДА, который доступен для всех контейнеров
-  strategy:
-   type: RollingUpdate
-   rollingUpdate:
-     maxUnavailable: 1
-      
+        - name: shared-volume
+          persistentVolumeClaim:
+            claimName: homework-pvc
+        - name: config-volume
+          configMap:
+            name: homework-configmap       
+      containers:
+        - name: main-container
+          image: python:3.9-slim
+          command:
+            - sh
+            - -c
+            - >
+              python3 -m http.server 8000 --bind 0.0.0.0 --directory /homework;
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: shared-volume
+              mountPath: /homework
+            - name: config-volume
+              mountPath: /homework/conf
+              readOnly: true    
+          livenessProbe:
+            httpGet:
+              path: /health.html 
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - sh
+                - -c
+                - >
+                  echo "Deleting index.html" &&
+                  rm -f /homework/index.html;
+      initContainers:
+        - name: init-container
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              echo "<html><body>OK</body></html>" > /homework/health.html &&
+              echo "<html><body><h1>Welcome to Homework</h1></body></html>" > /homework/index.html;
+          volumeMounts:
+            - name: shared-volume
+              mountPath: /homework
+      terminationGracePeriodSeconds: 30

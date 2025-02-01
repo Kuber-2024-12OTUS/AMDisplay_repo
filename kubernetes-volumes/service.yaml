@@ -5,9 +5,9 @@ metadata:
   namespace: homework
 spec:
   selector:
-    app: nginx
+    app: homework
   ports:
     - protocol: TCP
-      port: 80 # порт сервиса снаружи
-      targetPort: nginx-port # Порт внутри пода
+      port: 80
+      targetPort: 8000
   type: ClusterIP

@@ -3,25 +3,24 @@ kind: Ingress
 metadata:
   name: homework-ingress
   namespace: homework
-  annotations:   
-      nginx.ingress.kubernetes.io/rewrite-target: /$2  ## rewrite правило для переадресации на /index.html
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: nginx
   rules:
-    - host: homework.otus
-      http:
-        paths:
-          - path: /homepage  
-            pathType: Prefix
-            backend:
-              service:
-                name: homework-service
-                port:
-                  number: 80
-          - path: /index.html ## Корневой путь внутри подов, т.е то, что они отдают по умолчанию на 80 порту согласно спеке деплоймента
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: homework-service
-                port:
-                  number: 80
+  - host: homework.otus
+    http:
+      paths:
+      - path: /homework
+        pathType: Prefix
+        backend:
+          service:
+            name: homework-service
+            port:
+              number: 80
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: homework-service
+            port:
+              number: 80
