@@ -22,11 +22,14 @@ spec:
         - containerPort: 80 # Внутри контейнера. Автоматом открывается на поде
           name: nginx-port
         volumeMounts:
-        - name: workdir # в поде (хосте). Имя монтируемого тома
-          mountPath: /usr/share/nginx/html # Директория внутри контейнера
-        volumeMounts:
         - name: config-volume
           mountPath: /homework/conf
+        volumeMounts:
+        - name: nginx-custom-config # из этого тома возьми только custom.conf и смонтируй его в путь котроый ниже
+          mountPath: /etc/nginx/conf.d/
+        volumeMounts:
+        - name: workdir
+          mountPath: /usr/share/nginx/html # Директория внутри контейнера
         livenessProbe:
           httpGet:
             port: 80
@@ -37,8 +40,6 @@ spec:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "rm /homework/index.html"]
-      # nodeSelector:
-      #   homework: "true"
       initContainers:
       - name: install
         image: busybox:1.28
@@ -55,9 +56,20 @@ spec:
       - name: workdir
         persistentVolumeClaim:
           claimName: homework-pvc  # Ссылка на PVC
+      - name: custom-nginx-conf
+        configMap:
+          name: nginx-custom-config
+          items:
+          - key: custom.conf
+            path: custom.conf
       - name: config-volume
         configMap:
           name: homework-cm
+          items:
+          - key: "game.properties"
+            path: "game.properties"
+          - key: "user-interface.properties"
+            path: "user-interface.properties"
         # emptyDir: {} # Том, который живет внутри ПОДА, который доступен для всех контейнеров
   strategy:
    type: RollingUpdate

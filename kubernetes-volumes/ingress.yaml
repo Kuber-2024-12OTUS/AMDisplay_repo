@@ -3,24 +3,25 @@ kind: Ingress
 metadata:
   name: homework-ingress
   namespace: homework
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: / # любой запрос на path будет переписан на вот этот
+  annotations:   
+      nginx.ingress.kubernetes.io/rewrite-target: /$2  ## rewrite правило для переадресации на /index.html
 spec:
+  ingressClassName: nginx
   rules:
-  - host: "homework.otus" # На какой домен маршурутизируется
-    http:
-      paths:
-      - pathType: Prefix
-        path: "/homepage" # путь на поде, до которого пойдет запрос. То есть у тебя на поде есть какой-то путь /homepage, там что-то лежит. И когда ты идешь по юрлу http://что-то/homepage - то отдаются файлы, которые в этой директорий лежат
-        backend:
-          service:
-            name: homework-service
-            port:
-              number: 80
-      - pathType: Prefix
-        path: "/conf/file" # путь на поде, до которого пойдет запрос. То есть у тебя на поде есть какой-то путь /homepage, там что-то лежит. И когда ты идешь по юрлу http://что-то/homepage - то отдаются файлы, которые в этой директорий лежат
-        backend:
-          service:
-            name: homework-service
-            port:
-              number: 80
+    - host: homework.otus
+      http:
+        paths:
+          - path: /homepage  
+            pathType: Prefix
+            backend:
+              service:
+                name: homework-service
+                port:
+                  number: 80
+          - path: /index.html ## Корневой путь внутри подов, т.е то, что они отдают по умолчанию на 80 порту согласно спеке деплоймента
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: homework-service
+                port:
+                  number: 80
