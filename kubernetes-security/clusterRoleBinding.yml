@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metrics-binding
+subjects:
+  # Подключаем к кластерному роли Service Account из namespace homework
+  - kind: ServiceAccount
+    name: monitoring
+    namespace: homework
+roleRef:
+  # Ссылаемся на метаданные созданного нами ClusterRole
+  kind: ClusterRole
+  name: metrics-role
+  apiGroup: rbac.authorization.k8s.io
