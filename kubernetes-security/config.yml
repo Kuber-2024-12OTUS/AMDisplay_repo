@@ -1,0 +1,43 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: C:\Users\al\.minikube\ca.crt
+    extensions:
+    - extension:
+        last-update: Sat, 01 Feb 2025 12:02:37 MSK
+        provider: minikube.sigs.k8s.io
+        version: v1.34.0
+      name: cluster_info
+    server: https://127.0.0.1:58480
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    extensions:
+    - extension:
+        last-update: Sat, 01 Feb 2025 12:02:37 MSK
+        provider: minikube.sigs.k8s.io
+        version: v1.34.0
+      name: context_info
+    namespace: homework
+    user: minikube
+  name: minikube
+
+- context:
+    cluster: minikube
+    user: cd
+  name: cd
+
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: C:\Users\al\.minikube\profiles\minikube\client.crt
+    client-key: C:\Users\al\.minikube\profiles\minikube\client.key
+
+- name: cd
+  user:
+    client-certificate: /c/Users/al/Desktop/kuber_otus_dz/AMDisplay_repo/kubernetes-security/cd.crt
+    client-key: /c/Users/al/Desktop/kuber_otus_dz/AMDisplay_repo/kubernetes-security/cd.pem
