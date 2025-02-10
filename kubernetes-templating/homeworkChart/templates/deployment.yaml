@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-deployment
+  namespace: homework
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      volumes:
+        - name: {{ .Values.spec.volumes.shared-volume }}
+          persistentVolumeClaim:
+            claimName: {{ .Chart.Name }}-pvc
+        - name: {{ .Values.spec.volumes.config-name-volume }}
+          configMap:
+            name: {{ .Chart.Name }}-configmap
+      containers:
+        - name: {{ include "homework.containerName" . }} #main-container
+          image: "{{ .Values.image.repositoryPython }}:{{ .Values.image.tagPython }}" #python:3.9-slim
+          command:
+            - sh
+            - -c
+            - >
+              python3 -m http.server 8000 --bind 0.0.0.0 --directory /homework;
+          ports:
+            - containerPort: {{ .Values.ports.containerPort }}
+          volumeMounts:
+            - name: {{ .Values.spec.volumes.shared-volume }}
+              mountPath: /homework
+            - name: {{ .Values.spec.volumes.config-name-volume }}
+              mountPath: /homework/conf
+              readOnly: true  
+          {{- if .Values.probe.liveness.enabled }} # helm install homework-chart . --set probe.liveness.enabled=false
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probe.liveness.path }}
+              port: {{ .Values.ports.containerPort }}
+            initialDelaySeconds: {{ .Values.probe.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probe.liveness.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.probe.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probe.liveness.failureThreshold }}
+          {{- end }}
+          {{- if .Values.probe.readiness.enabled }} # helm install homework-chart . --set probe.readiness.enabled=false
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probe.readiness.path }}
+              port: {{ .Values.ports.containerPort }}
+            initialDelaySeconds: {{ .Values.probe.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probe.readiness.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.probe.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probe.readiness.failureThreshold }}
+          {{- end }}
+
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - sh
+                - -c
+                - >
+                  echo "Deleting index.html" &&
+                  rm -f /homework/index.html;
+      initContainers:
+        - name: {{ .Values.containers.init . }} #init-container
+          image: "{{ .Values.image.repositoryinit }}:{{ .Values.image.tagInit }}"
+          command:
+            - sh
+            - -c
+            - >
+              echo "<html><body>OK</body></html>" > /homework/health.html &&
+              echo "<html><body><h1>Welcome to Homework</h1></body></html>" > /homework/index.html;
+          volumeMounts:
+            - name: {{ .Values.spec.volumes.shared-volume }}
+              mountPath: /homework
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+
