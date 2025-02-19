@@ -1,0 +1,101 @@
+replicaCount: 1
+
+image:
+  repositoryinit: busy-box
+  tagInit: ""
+  repositoryPython: python
+  pullPolicy: IfNotPresent
+  tagPython: 3.9-slim
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+ContainerNameOverrideMain: main-container
+
+containers:
+  init: init-container
+
+terminationGracePeriodSeconds: 30
+
+securityContext: {}
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+resources: {}
+
+probe:
+  liveness:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    path: /health.html 
+    port: 80
+
+  readiness:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 1
+    failureThreshold: 3
+    path: /index
+    port: 80
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes:
+  pv:
+    Capacity: 10G
+  pvc:
+    Capacity: 1G
+  spec:
+    accessModes: ReadWriteOnce
+
+volumeMounts: []
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+spec:
+  volumes:
+    shared-volume: shared-volume
+    config-name-volume: config-volume
+
+ports:
+  containerPort: 8000
+  containerPortPod: 80
+
+redis:
+  enabled: true
+  auth:
+    enabled: false

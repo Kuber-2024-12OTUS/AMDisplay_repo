@@ -1,0 +1,10 @@
+apiVersion: "otus.homework/v1"
+kind: MySQL
+metadata:
+  name: crd-mysql
+  namespace: homework
+spec:
+  image: "roflmaoinmysoul/mysql-operator:1.0.0"
+  database: "mydb"
+  password: "secret"
+  storage_size: "1Gi"
